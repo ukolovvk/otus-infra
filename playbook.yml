@@ -1,0 +1,110 @@
+- hosts: backend_nginx
+  become: true
+  tasks:
+    - name: Copy apt's 01proxy
+      copy:
+        src: 01proxy
+        dest: /etc/apt/apt.conf.d/01proxy
+        mode: '0644'
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+    - name: Copy nginx config
+      copy:
+        src: nginx_back/default
+        dest: /etc/nginx/sites-enabled/default
+        mode: '0644'
+    - name: Copy nginx index.html
+      copy:
+        src: nginx_back/index.html
+        dest: /usr/share/nginx/html/index.html
+        mode: '0644'
+    - name: Start Nginx
+      service:
+        name: nginx
+        state: started
+
+- hosts: backend_uwsgi
+  become: true
+  tasks:
+    - name: Copy apt's 01proxy
+      copy:
+        src: 01proxy
+        dest: /etc/apt/apt.conf.d/01proxy
+        mode: '0644'
+    - name: Install required packages
+      apt:
+        name:
+          - python3-pip
+          - uwsgi
+          - uwsgi-plugin-python3
+        state: present
+        update_cache: yes
+    - name: Install python packages
+      pip:
+        name:
+          - flask
+          - redis
+    - name: Create application dir
+      file:
+        path: /var/www/flask_redis_app
+        state: directory
+        mode: '0755'
+    - name: Copy flask app to server
+      copy:
+        src: uwsgi_back/app.py
+        dest: /var/www/flask_redis_app/app.py
+        mode: '0644'
+    - name: Copy uwsgi config
+      copy: 
+        src: uwsgi_back/uwsgi.ini
+        dest: /var/www/flask_redis_app/uwsgi.ini
+    - name: Start uwsgi
+      command: uwsgi --ini /var/www/flask_redis_app/uwsgi.ini
+      args:
+        chdir: /var/www/flask_redis_app
+        creates: /var/www/flask_redis_app/app.py
+
+- hosts: redis
+  become: true
+  tasks:
+    - name: Copy apt's 01proxy
+      copy:
+        src: 01proxy
+        dest: /etc/apt/apt.conf.d/01proxy
+        mode: '0644'
+    - name: Install Redis
+      apt:
+        name:
+          - redis-server
+        state: present
+        update_cache: yes
+    - name: Copy Redis config
+      copy:
+        src: redis/redis.conf
+        dest: /etc/redis/redis.conf
+        mode: '0644'
+    - name: Start Redis
+      service:
+        name: redis-server
+        state: started
+        enable: true
+
+- hosts: nginx
+  become: true 
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+    - name: Copy nginx config
+      copy:
+        src: nginx/default
+        dest: /etc/nginx/sites-enabled/default
+        mode: '0644'
+    - name: Start Nginx
+      service:
+        name: nginx
+        state: started

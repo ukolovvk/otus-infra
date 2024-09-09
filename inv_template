@@ -1,0 +1,14 @@
+[nginx]
+${ nginx_vm_ip } ansible_user=vmuser
+
+[redis]
+${ redis_vm_ip } ansible_user=vmuser
+
+[backend_uwsgi]
+${ uwsgi_vm_ip } ansible_user=vmuser
+
+[backend_nginx]
+${ nginx_back_vm_ip } ansible_user=vmuser
+
+[all:vars]
+ansible_ssh_common_args='-o ProxyCommand="ssh -i private_key -o StrictHostKeyChecking=no -W %h:%p -q vmuser@${ nginx_vm_ip }"'

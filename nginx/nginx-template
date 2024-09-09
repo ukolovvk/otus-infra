@@ -1,0 +1,14 @@
+http {
+    upstream backends {
+        server ${ redis_vm_ip }
+        server ${ nginx_back_vm_ip }
+    }
+
+    server {
+        listen 80;
+
+        location / {
+            proxy_pass http://backends;
+        }
+    }
+}

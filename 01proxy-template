@@ -1,0 +1,2 @@
+Acquire::http::Proxy "http://${ nginx_vm_ip }:3128/";
+Acquire::https::Proxy "http://${ nginx_vm_ip }:3128/";
