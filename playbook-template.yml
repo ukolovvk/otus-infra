@@ -46,8 +46,8 @@
     - name: Install python packages
       command: pip install flask redis --break-system-packages
       environment:
-        http_proxy: 10.128.0.9:3128
-        https_proxy: 10.128.0.9:3128
+        http_proxy: ${ nginx_vm_private_ip }:3128
+        https_proxy: ${ nginx_vm_private_ip }:3128
     - name: Create application dir
       file:
         path: /var/www/app
@@ -106,7 +106,7 @@
     - name: Start Redis
       service:
         name: redis-server
-        state: started
+        state: restarted
         enabled: true
 
 - hosts: nginx
@@ -125,5 +125,5 @@
     - name: Start Nginx
       service:
         name: nginx
-        state: started
+        state: restarted
         enabled: true

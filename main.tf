@@ -66,6 +66,13 @@ resource yandex_vpc_security_group vm_group_sg {
 
   ingress {
     protocol       = "TCP"
+    description    = "redis"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 6379
+  }
+
+  ingress {
+    protocol       = "TCP"
     description    = "ext-http"
     v4_cidr_blocks = ["0.0.0.0/0"]
     port           = 80
@@ -155,6 +162,18 @@ resource "yandex_compute_instance" "hw-vms" {
     depends_on = [yandex_compute_disk.boot_disks]
 }
 
+resource "local_file" "palybook-temp" {
+    content = templatefile(
+        "playbook-template.yml",
+        {
+            nginx_vm_private_ip = yandex_compute_instance.nginx-vm.network_interface[0].ip_address
+        }
+    )
+    filename = "playbook.yml"
+
+    depends_on = [yandex_compute_instance.hw-vms]
+}
+
 resource "local_file" "apt-proxy" {
     content = templatefile(
         "01proxy-template",
@@ -163,6 +182,18 @@ resource "local_file" "apt-proxy" {
         }
     )
     filename = "01proxy"
+
+    depends_on = [yandex_compute_instance.hw-vms]
+}
+
+resource "local_file" "pip-proxy" {
+    content = templatefile(
+        "pip-template.conf",
+        {
+            nginx_vm_private_ip = yandex_compute_instance.nginx-vm.network_interface[0].ip_address
+        }
+    )
+    filename = "pip.conf"
 
     depends_on = [yandex_compute_instance.hw-vms]
 }
@@ -198,7 +229,7 @@ resource "local_file" "nginx_conf" {
     content = templatefile(
         "nginx/nginx-template",
         {
-            redis_vm_ip = yandex_compute_instance.hw-vms[0].network_interface[0].ip_address
+            uwsgi_vm_ip = yandex_compute_instance.hw-vms[1].network_interface[0].ip_address
             nginx_back_vm_ip = yandex_compute_instance.hw-vms[2].network_interface[0].ip_address
         }
     )

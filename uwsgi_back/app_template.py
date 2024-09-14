@@ -3,8 +3,11 @@ import redis
 
 app = Flask(__name__)
 
-# Подключение к Redis
-r = redis.Redis(host='${ redis_vm_ip }', port=80, db=0)
+r = redis.Redis(host='${ redis_vm_ip }', port=6379, db=0)
+
+@app.route('/', methods=['GET'])
+def get_default():
+    return "Flask App Default"
 
 @app.route('/get/<key>', methods=['GET'])
 def get_value(key):
@@ -29,4 +32,4 @@ def delete_value(key):
     return jsonify({'error': 'Key not found'}), 404
 
 if __name__ == '__main__':
-    app.run()
+     app.run(host='0.0.0.0')

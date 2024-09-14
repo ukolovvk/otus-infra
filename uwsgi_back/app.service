@@ -1,0 +1,13 @@
+[Unit]
+Description="uWSGI server instance for app"
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/app/
+Environment=FLASK_ENV=test
+ExecStart=/usr/bin/uwsgi --ini /var/www/app/uwsgi.ini
+
+[Install]
+WantedBy=multi-user.target

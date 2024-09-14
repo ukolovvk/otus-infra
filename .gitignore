@@ -2,3 +2,8 @@ private_key
 .terraform*
 terraform*
 inv
+app.py
+01proxy
+pip.conf
+playbook.yml
+nginx/default
