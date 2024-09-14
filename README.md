@@ -1,1 +1,2 @@
-# otus-infra
+terraform apply
+terraform destroy

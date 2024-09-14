@@ -1,0 +1,129 @@
+- hosts: backend_nginx
+  become: true
+  tasks:
+    - name: Copy apt's 01proxy
+      copy:
+        src: 01proxy
+        dest: /etc/apt/apt.conf.d/01proxy
+        mode: '0644'
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+    - name: Copy nginx config
+      copy:
+        src: nginx_back/default
+        dest: /etc/nginx/sites-enabled/default
+        mode: '0644'
+    - name: Copy nginx index.html
+      copy:
+        src: nginx_back/index.html
+        dest: /var/www/html/index.html
+        mode: '0644'
+    - name: Start Nginx
+      service:
+        name: nginx
+        state: started
+
+- hosts: backend_uwsgi
+  become: true
+  tasks:
+    - name: Copy apt's 01proxy
+      copy:
+        src: 01proxy
+        dest: /etc/apt/apt.conf.d/01proxy
+        mode: '0644'
+    - name: Install required packages
+      apt:
+        name:
+          - python3-pip
+          - python3-dev
+          - uwsgi
+          - uwsgi-plugin-python3
+          - nginx
+        state: present
+        update_cache: yes
+    - name: Install python packages
+      command: pip install flask redis --break-system-packages
+      environment:
+        http_proxy: 10.128.0.9:3128
+        https_proxy: 10.128.0.9:3128
+    - name: Create application dir
+      file:
+        path: /var/www/app
+        state: directory
+        mode: '0755'
+    - name: Copy flask app to server
+      copy:
+        src: uwsgi_back/app.py
+        dest: /var/www/app/app.py
+        mode: '0644'
+    - name: Copy uwsgi config
+      copy: 
+        src: uwsgi_back/uwsgi.ini
+        dest: /var/www/app/uwsgi.ini
+    - name: Copy wsgi.py
+      copy: 
+        src: uwsgi_back/wsgi.py
+        dest: /var/www/app/wsgi.py
+    - name: Copy app service
+      copy: 
+        src: uwsgi_back/app.service
+        dest: /etc/systemd/system/app.service
+    - name: Copy nginx conf
+      copy: 
+        src: uwsgi_back/nginx_app
+        dest: /etc/nginx/sites-enabled/nginx_app   
+    - name: Delete nginx default
+      file:
+        state: absent
+        path: /etc/nginx/sites-enabled/default  
+    - name: Chown /var/www/app
+      command: chown -R www-data.www-data /var/www/app
+    - name: Restart app
+      systemd:
+          name: app
+          state: restarted
+    - name: Restart nginx
+      systemd:
+          name: nginx
+          state: restarted      
+
+- hosts: redis
+  become: true
+  tasks:
+    - name: Copy apt's 01proxy
+      copy:
+        src: 01proxy
+        dest: /etc/apt/apt.conf.d/01proxy
+        mode: '0644'
+    - name: Install Redis
+      apt:
+        name:
+          - redis-server
+        state: present
+        update_cache: yes
+    - name: Start Redis
+      service:
+        name: redis-server
+        state: started
+        enabled: true
+
+- hosts: nginx
+  become: true 
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+    - name: Copy nginx config
+      copy:
+        src: nginx/default
+        dest: /etc/nginx/sites-enabled/default
+        mode: '0644'
+    - name: Start Nginx
+      service:
+        name: nginx
+        state: started
+        enabled: true
